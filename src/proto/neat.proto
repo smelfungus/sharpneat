@@ -1,0 +1,30 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "SharpNeat.DistributedProto";
+
+package proto;
+
+service NeatProtoService {
+  rpc AcquireJob (stream JobResult) returns (stream JobReply);
+}
+
+message JobResult {
+  repeated GenomeTaskResult genomeTaskResults = 1;
+}
+
+message JobReply {
+  repeated GenomeTask genomeTasks = 1;
+  string assemblyName = 2;
+  string typeName = 3;
+  string configDoc = 4;
+}
+
+message GenomeTask {
+  string id = 1;
+  repeated bytes genomes = 2;
+}
+
+message GenomeTaskResult {
+  string id = 1;
+  repeated double fitness = 2;
+}

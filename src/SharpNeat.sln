@@ -38,7 +38,14 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D6A68275-17B3-40BF-98E4-3FCB5DD50CB6}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		proto\neat.proto = proto\neat.proto
 	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpNeat.DistributedClient", "SharpNeat.DistributedClient\SharpNeat.DistributedClient.csproj", "{BF847E9D-0088-4590-913A-FA68117FB2EF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpNeat.DistributedServer", "SharpNeat.DistributedServer\SharpNeat.DistributedServer.csproj", "{04B686BB-9C10-4310-9B07-F051DC7011A3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpNeat.Config", "SharpNeat.Config\SharpNeat.Config.csproj", "{6FD8CA15-7F91-48C2-AACB-6A41BEA3081C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -102,6 +109,18 @@ Global
 		{1BCF2975-0397-455A-A1EE-9835A44079AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1BCF2975-0397-455A-A1EE-9835A44079AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1BCF2975-0397-455A-A1EE-9835A44079AA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BF847E9D-0088-4590-913A-FA68117FB2EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BF847E9D-0088-4590-913A-FA68117FB2EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BF847E9D-0088-4590-913A-FA68117FB2EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BF847E9D-0088-4590-913A-FA68117FB2EF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{04B686BB-9C10-4310-9B07-F051DC7011A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{04B686BB-9C10-4310-9B07-F051DC7011A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{04B686BB-9C10-4310-9B07-F051DC7011A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{04B686BB-9C10-4310-9B07-F051DC7011A3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6FD8CA15-7F91-48C2-AACB-6A41BEA3081C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6FD8CA15-7F91-48C2-AACB-6A41BEA3081C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6FD8CA15-7F91-48C2-AACB-6A41BEA3081C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6FD8CA15-7F91-48C2-AACB-6A41BEA3081C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

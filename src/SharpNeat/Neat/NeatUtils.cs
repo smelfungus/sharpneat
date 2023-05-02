@@ -156,7 +156,7 @@ public static class NeatUtils
         return genomeListEvaluator;
     }
 
-    private static ISpeciationStrategy<NeatGenome<double>, double> CreateSpeciationStrategy(
+    public static ISpeciationStrategy<NeatGenome<double>, double> CreateSpeciationStrategy(
         INeatExperiment<double> neatExperiment)
     {
         // Resolve a degreeOfParallelism (-1 is allowed in config, but must be resolved here to an actual degree).
