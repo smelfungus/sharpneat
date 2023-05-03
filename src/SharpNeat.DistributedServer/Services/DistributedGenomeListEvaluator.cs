@@ -31,7 +31,7 @@ namespace SharpNeat.DistributedServer.Services
         {
             var tasks = new ConcurrentBag<Task>();
             Parallel.ForEach(
-                SplitIntoSets(genomeList, Program.ChunkSize),
+                SplitIntoSets(genomeList, Program.BatchSize),
                 new ParallelOptions
                 {
                     MaxDegreeOfParallelism = 32
@@ -70,7 +70,7 @@ namespace SharpNeat.DistributedServer.Services
 
         private Task<List<double>> Evaluate(List<NeatGenome<double>> genomes)
         {
-            var task = _distributedNeat.AddJob(genomes, out var id);
+            var task = _distributedNeat.AddTaskGroup(genomes, out var id);
             return Task.Run(async () =>
             {
                 var result = await TimeoutAfter(task, TimeSpan.FromMinutes(10), id, genomes);
@@ -94,7 +94,7 @@ namespace SharpNeat.DistributedServer.Services
                 return await task; // Very important in order to propagate exceptions
             }
 
-            _distributedNeat.RemoveJob(id);
+            _distributedNeat.RemoveTaskGroup(id);
             return await Evaluate(neatGenomes);
         }
 

@@ -5,14 +5,14 @@ option csharp_namespace = "SharpNeat.DistributedProto";
 package proto;
 
 service NeatProtoService {
-  rpc AcquireJob (stream JobResult) returns (stream JobReply);
+  rpc AcquireTaskGroup (stream TaskGroupResult) returns (stream TaskGroupReply);
 }
 
-message JobResult {
+message TaskGroupResult {
   repeated GenomeTaskResult genomeTaskResults = 1;
 }
 
-message JobReply {
+message TaskGroupReply {
   repeated GenomeTask genomeTasks = 1;
   string assemblyName = 2;
   string typeName = 3;

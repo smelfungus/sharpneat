@@ -2,21 +2,26 @@
 using Microsoft.Extensions.Logging;
 using Redzen.Random;
 using SharpNeat.DistributedServer.Services;
+using SharpNeat.Evaluation;
+using SharpNeat.EvolutionAlgorithm;
 using SharpNeat.EvolutionAlgorithm.Runner;
 using SharpNeat.Experiments;
+using SharpNeat.IO;
+using SharpNeat.IO.Models;
 using SharpNeat.Neat;
 using SharpNeat.Neat.EvolutionAlgorithm;
 using SharpNeat.Neat.Genome;
 using SharpNeat.Neat.Genome.Double;
 using SharpNeat.Neat.Genome.IO;
 using SharpNeat.Neat.Reproduction.Asexual.WeightMutation;
+using SharpNeat.NeuralNets.Double;
 
 namespace SharpNeat.DistributedServer
 {
     public class DistributedNeat
     {
         private EvolutionAlgorithmRunner _eaRunner;
-        private readonly BlockingCollection<Job> _jobs = new();
+        private readonly BlockingCollection<TaskGroup> _taskGroups = new();
         private readonly ConcurrentDictionary<string, TaskCompletionSource<List<double>>> _results = new();
         private readonly ILogger<DistributedNeat> _logger;
 
@@ -25,12 +30,12 @@ namespace SharpNeat.DistributedServer
             _logger = logger;
         }
 
-        public class Job
+        public class TaskGroup
         {
             public string Id { get; }
             public List<byte[]> Genomes { get; }
 
-            public Job(string id, List<byte[]> genomes)
+            public TaskGroup(string id, List<byte[]> genomes)
             {
                 Id = id;
                 Genomes = genomes;
@@ -43,13 +48,18 @@ namespace SharpNeat.DistributedServer
 
             var factory = (INeatExperimentFactory?)Activator.CreateInstance(
                     "SharpNeat.Tasks",
-                    "SharpNeat.Tasks.BinaryElevenMultiplexer.BinaryElevenMultiplexerExperimentFactory"
+                    Program.TaskAssembly
                 )
                 ?.Unwrap() ?? throw new InvalidOperationException();
 
-            var neatExperiment = factory.CreateExperiment("config/experiments-config/binary-11-multiplexer.config.json");
+            var neatExperiment = factory.CreateExperiment(Program.TaskConfigFile);
 
             var metaNeatGenome = NeatUtils.CreateMetaNeatGenome(neatExperiment);
+
+            var genomeDecoder =
+                NeatGenomeDecoderFactory.CreateGenomeDecoder(
+                    neatExperiment.IsAcyclic,
+                    neatExperiment.EnableHardwareAcceleratedNeuralNets);
 
             var neatPop = NeatPopulationFactory<double>.CreatePopulation(
                 metaNeatGenome,
@@ -70,10 +80,15 @@ namespace SharpNeat.DistributedServer
             _eaRunner.UpdateEvent += (_, _) =>
             {
                 var line =
-                    $"bestFitness={neatPop.Stats.BestFitness.PrimaryFitness} stats={_eaRunner.EA.Stats}";
+                    $"Gen={_eaRunner.EA.Stats.Generation:N0}|BestFitness={neatPop.Stats.BestFitness.PrimaryFitness:N6}|MeanFitness={neatPop.Stats.MeanFitness:N6}|BestComplexity={neatPop.Stats.BestComplexity:N6}|MeanComplexity={neatPop.Stats.MeanComplexity:N6}|MaxComplexity={neatPop.Stats.MaxComplexity:N6}";
+                
                 _logger.LogInformation(line);
 
-                File.AppendAllLines("log.txt", new[] { $"Gen={_eaRunner.EA.Stats.Generation:N0}|BestFitness={neatPop.Stats.BestFitness.PrimaryFitness:N6}|MeanFitness={neatPop.Stats.MeanFitness:N6}|BestComplexity={neatPop.Stats.BestComplexity:N6}|MeanComplexity={neatPop.Stats.MeanComplexity:N6}|MaxComplexity={neatPop.Stats.MaxComplexity:N6}" });
+                File.AppendAllLines("log.txt", new[] { line });
+
+                NetFile.Save(
+                    NeatGenomeConverter.ToNetFileModel(neatPop.BestGenome),
+                    _eaRunner.EA.Stats.Generation.ToString());
             };
 
             // Start the algorithm
@@ -117,14 +132,14 @@ namespace SharpNeat.DistributedServer
             return ea;
         }
 
-        public void RemoveJob(string id)
+        public void RemoveTaskGroup(string id)
         {
             if (!_results.TryRemove(id, out var taskCompletionSource)) return;
-            _logger.LogWarning($"Task {id} removed");
+            _logger.LogWarning($"Task group {id} removed");
             taskCompletionSource.SetCanceled();
         }
 
-        public Task<List<double>> AddJob(List<NeatGenome<double>> genome, out string id)
+        public Task<List<double>> AddTaskGroup(List<NeatGenome<double>> genome, out string id)
         {
             id = Guid.NewGuid().ToString();
             return Evaluate(id, genome);
@@ -148,48 +163,52 @@ namespace SharpNeat.DistributedServer
             var taskCompletionSource = new TaskCompletionSource<List<double>>();
 
             _results[id] = taskCompletionSource;
-            _jobs.Add(new Job(id, genomeArrays.ToList()));
+            _taskGroups.Add(new TaskGroup(id, genomeArrays.ToList()));
 
             return taskCompletionSource.Task;
         }
 
-        public async Task<IEnumerable<Job>> TakeJob(int batchSize)
+        public async Task<IEnumerable<TaskGroup>> AcquireTaskGroup(int taskGroupCount)
         {
+            _logger.LogInformation($"Acquiring task groups...");
+            _logger.LogInformation($"Pending task groups: {_taskGroups.Count}, awaiting task groups: {_results.Count}");
             return await Task.Run(() =>
             {
-                // _logger.LogInformation($"Starting to take jobs");
+                // _logger.LogInformation($"Starting to acquire task group");
 
-                var takenJobs = new List<Job>(batchSize);
-                if (_jobs.Count > 0)
+                var takenTaskGroups = new List<TaskGroup>(taskGroupCount);
+                if (_taskGroups.Count > 0)
                 {
-                    for (var i = 0; i < batchSize; i++)
+                    for (var i = 0; i < taskGroupCount; i++)
                     {
-                        if (_jobs.TryTake(out var job))
+                        if (_taskGroups.TryTake(out var taskGroup))
                         {
-                            takenJobs.Add(job);
+                            takenTaskGroups.Add(taskGroup);
                         }
                     }
                 }
 
-                if (takenJobs.Count == 0)
+                if (takenTaskGroups.Count == 0)
                 {
-                    takenJobs.Add(_jobs.Take());
+                    takenTaskGroups.Add(_taskGroups.Take());
                 }
 
-                // _logger.LogInformation($"Jobs taken: {takenJobs.Count}");
-                return takenJobs;
+                // _logger.LogInformation($"Task groups acquired: {takenTaskGroups.Count}");
+                return takenTaskGroups;
             });
         }
 
-        public async Task<Job> TakeJob()
+        public async Task<TaskGroup> AcquireTaskGroup()
         {
-            // Console.WriteLine($"{_jobs.Count} new jobs {_results.Count} awaiting jobs");
-            return await Task.Run(() => _jobs.Take());
+            _logger.LogInformation($"Acquiring task group...");
+            _logger.LogInformation($"Pending task groups: {_taskGroups.Count}, awaiting task groups: {_results.Count}");
+            return await Task.Run(() => _taskGroups.Take());
         }
 
         public void SendResult(string id, List<double> fitness)
         {
-            // Console.WriteLine($"{_jobs.Count} new jobs {_results.Count} awaiting jobs");
+            _logger.LogInformation($"Result acquired from ${id}");
+            _logger.LogInformation($"Pending task groups: {_taskGroups.Count}, awaiting task groups: {_results.Count}");
             if (_results.TryRemove(id, out var taskCompletionSource))
             {
                 taskCompletionSource.SetResult(fitness);

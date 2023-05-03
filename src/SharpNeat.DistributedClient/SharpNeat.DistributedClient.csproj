@@ -8,17 +8,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore" Version="2.52.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Protobuf Include="..\proto\neat.proto" GrpcServices="Client" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SharpNeat.Config\SharpNeat.Config.csproj" />
+    <ProjectReference Include="..\SharpNeat.Gymnasium\SharpNeat.Gymnasium.csproj" />
     <ProjectReference Include="..\SharpNeat.Tasks\SharpNeat.Tasks.csproj" />
     <ProjectReference Include="..\SharpNeat\SharpNeat.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Grpc.AspNetCore" Version="2.53.0-pre1" />
   </ItemGroup>
 
 </Project>

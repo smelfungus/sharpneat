@@ -16,20 +16,20 @@ namespace SharpNeat.DistributedServer.Services
             _logger = logger;
         }
 
-        public override async Task AcquireJob(
-            IAsyncStreamReader<JobResult> requestStream,
-            IServerStreamWriter<JobReply> responseStream,
+        public override async Task AcquireTaskGroup(
+            IAsyncStreamReader<TaskGroupResult> requestStream,
+            IServerStreamWriter<TaskGroupReply> responseStream,
             ServerCallContext context
         )
         {
             var clientName = context.RequestHeaders.Single(e => e.Key == "client-name").Value;
-            var batchSize = int.Parse(context.RequestHeaders.Single(e => e.Key == "batch-size").Value);
-            _logger.LogInformation($"Connected to {clientName}, batch size {batchSize}");
+            var taskGroupCount = int.Parse(context.RequestHeaders.Single(e => e.Key == "task-group-count").Value);
+            _logger.LogInformation($"Connected to {clientName}, task group count {taskGroupCount}");
 
-            var initialJob = await _neat.TakeJob(batchSize);
+            var initialTaskGroup = await _neat.AcquireTaskGroup(taskGroupCount);
 
-            _logger.LogInformation($"Sending job to {clientName}");
-            await SendJob(responseStream, initialJob);
+            _logger.LogInformation($"Sending task group to {clientName}");
+            await SendTaskGroup(responseStream, initialTaskGroup);
 
             try
             {
@@ -41,8 +41,8 @@ namespace SharpNeat.DistributedServer.Services
                         _neat.SendResult(currentGenomeTaskResult.Id, currentGenomeTaskResult.Fitness.ToList());
                     }
 
-                    var nextJob = await _neat.TakeJob(batchSize);
-                    await SendJob(responseStream, nextJob);
+                    var nextTaskGroup = await _neat.AcquireTaskGroup(taskGroupCount);
+                    await SendTaskGroup(responseStream, nextTaskGroup);
                 }
             }
             catch
@@ -53,25 +53,25 @@ namespace SharpNeat.DistributedServer.Services
             _logger.LogInformation($"{clientName} disconnected");
         }
 
-        private async Task SendJob(IServerStreamWriter<JobReply> responseStream, IEnumerable<DistributedNeat.Job> jobs)
+        private async Task SendTaskGroup(IServerStreamWriter<TaskGroupReply> responseStream, IEnumerable<DistributedNeat.TaskGroup> taskGroups)
         {
-            var genomeTasks = jobs
-                .Select(job =>
+            var genomeTasks = taskGroups
+                .Select(taskGroup =>
                     {
-                        var genomeTask = new GenomeTask { Id = job.Id };
-                        genomeTask.Genomes.Add(job.Genomes.Select(ByteString.CopyFrom));
+                        var genomeTask = new GenomeTask { Id = taskGroup.Id };
+                        genomeTask.Genomes.Add(taskGroup.Genomes.Select(ByteString.CopyFrom));
                         return genomeTask;
                     }
                 ).ToList();
-            var jobReply = new JobReply
+            var taskGroupReply = new TaskGroupReply
             {
                 AssemblyName = "SharpNeat.Tasks",
-                TypeName = "SharpNeat.Tasks.BinaryElevenMultiplexer.BinaryElevenMultiplexerExperimentFactory",
-                ConfigDoc = "config/experiments-config/binary-11-multiplexer.config.json"
+                TypeName = Program.TaskAssembly,
+                ConfigDoc = Program.TaskConfigFile
             };
-            jobReply.GenomeTasks.AddRange(genomeTasks);
-            await responseStream.WriteAsync(jobReply);
-            // _logger.LogInformation($"Jobs sent {jobReply.GenomeTasks.Count}");
+            taskGroupReply.GenomeTasks.AddRange(genomeTasks);
+            await responseStream.WriteAsync(taskGroupReply);
+            // _logger.LogInformation($"Tasks sent {taskGroupReply.GenomeTasks.Count}");
         }
     }
 }
