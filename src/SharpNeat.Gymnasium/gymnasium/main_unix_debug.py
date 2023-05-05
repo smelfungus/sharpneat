@@ -11,7 +11,7 @@ import numpy as np
 import logging
 import socket
 
-logging.basicConfig(filename='debug.log', encoding='utf-8', level=logging.FATAL)
+logging.basicConfig(filename='debug.log', encoding='utf-8', level=logging.DEBUG)
 logging.debug("start")
 
 parser = ArgumentParser()
@@ -65,34 +65,27 @@ def run_episode():
 
         total_timesteps += 1
 
-        try:
-            observation, reward, terminated, truncated, info = env.step(a)
+        observation, reward, terminated, truncated, info = env.step(a)
+        done = terminated or truncated
 
-            done = terminated or truncated
+        # if reward != 0:
+        #     print("reward %0.3f" % reward)
 
-            # if reward != 0:
-            #     print("reward %0.3f" % reward)
+        total_reward += reward
+        latest_rewards.append(float(reward))
 
-            total_reward += reward
-            latest_rewards.append(float(reward))
+        masked_done = done
 
-            masked_done = done
+        if total_timesteps >= max_reward_history_len:
+            low_performing = True
+            for historical_reward in latest_rewards:
+                if historical_reward > 0:
+                    low_performing = False
+                    break
+            if low_performing:
+                masked_done = True
 
-            if total_timesteps >= max_reward_history_len:
-                low_performing = True
-                for historical_reward in latest_rewards:
-                    if historical_reward > 0:
-                        low_performing = False
-                        break
-                if low_performing:
-                    masked_done = True
-
-            if not test:
-                send_observation(sock, observation, float(total_reward), masked_done)
-
-        except Exception as env_exception:
-            logging.error(str(env_exception))
-            masked_done = True
+        if not test:
             send_observation(sock, observation, float(total_reward), masked_done)
 
         if render:
@@ -113,7 +106,7 @@ def send_observation(conn: socket, observation: np.array, reward: float, done: b
     message = bytes(observation.astype(float)) + bytes(np.array([reward]).astype(float)) + bytes(
             np.array([int(done)]))
     conn.sendall(message)
-    # logging.debug("Observation sent: %s bytes", str(len(message)))
+    logging.debug("Observation sent: %s bytes", str(len(message)))
 
 
 def read_action(conn: socket, space: spaces.Space):
@@ -123,7 +116,7 @@ def read_action(conn: socket, space: spaces.Space):
     item_size = 4 if is_discrete else space.dtype.itemsize
     action_struct = conn.recv(item_size * count)
     action_got = struct.unpack(count * type_char, action_struct)
-    # logging.debug("Action read: %s", str(action_got))
+    logging.debug("Action read: %s", str(action_got))
     return action_got[0] if is_discrete else action_got
 
 

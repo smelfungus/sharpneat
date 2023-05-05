@@ -114,8 +114,14 @@ public sealed class GymnasiumEpisode
         const int count1 = sizeof(double);
         const int count2 = sizeof(long);
         var reader = new BinaryReader(namedPipeServerStream);
-        var inputBuffer = reader.ReadBytes(count0 + count1 + count2);
-        // var read = namedPipeServerStream.Read(inputBuffer, 0, inputBuffer.Length);
+        var totalCount = count0 + count1 + count2;
+        var inputBuffer = reader.ReadBytes(totalCount);
+        if (inputBuffer.Length != totalCount)
+        {
+            Console.WriteLine($"BinaryReader bytes read: {inputBuffer.Length}/{totalCount}");
+        }
+        // var inputBuffer = new byte[count0 + count1 + count2];
+        // namedPipeServerStream.Read(inputBuffer, 0, inputBuffer.Length);
         var observation = new double[count];
         var reward = new double[1];
         var done = new long[1];
