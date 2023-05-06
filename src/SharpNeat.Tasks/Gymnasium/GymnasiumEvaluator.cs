@@ -4,7 +4,7 @@ namespace SharpNeat.Tasks.Gymnasium;
 
 public sealed class GymnasiumEvaluator : IPhenomeEvaluator<IBlackBox<double>>
 {
-    private const int TrialsPerEvaluation = 1;
+    private const int TrialsPerEvaluation = 5;
     private readonly int _inputCount;
     private readonly int _outputCount;
     private readonly bool _isContinuous;

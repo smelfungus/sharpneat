@@ -73,7 +73,7 @@ namespace SharpNeat.DistributedServer.Services
             var task = _distributedNeat.AddTaskGroup(genomes, out var id);
             return Task.Run(async () =>
             {
-                var result = await TimeoutAfter(task, TimeSpan.FromSeconds(20), id, genomes);
+                var result = await TimeoutAfter(task, TimeSpan.FromSeconds(30), id, genomes);
                 for (var i = 0; i < genomes.Count; i++)
                 {
                     genomes[i].FitnessInfo = new FitnessInfo(result[i]);

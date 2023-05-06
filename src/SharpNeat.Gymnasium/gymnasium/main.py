@@ -24,7 +24,7 @@ render = args.render == "True"
 test = args.test == "True"
 
 if not test:
-    pipe = win32pipe.CreateNamedPipe("\\\\.\\pipe\\gymnasium_pipe_" + args.uuid,
+    pipe = win32pipe.CreateNamedPipe("\\\\.\\pipe\\sharpneat.gymnasium." + args.uuid + ".pipe",
                                      win32pipe.PIPE_ACCESS_DUPLEX,
                                      win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT,
                                      1, 1024, 1024, 0, None)

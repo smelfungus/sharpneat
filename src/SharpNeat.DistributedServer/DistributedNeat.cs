@@ -80,7 +80,7 @@ namespace SharpNeat.DistributedServer
             _eaRunner.UpdateEvent += (_, _) =>
             {
                 var line =
-                    $"Gen={_eaRunner.EA.Stats.Generation:N0}|BestFitness={neatPop.Stats.BestFitness.PrimaryFitness:N6}|MeanFitness={neatPop.Stats.MeanFitness:N6}|BestComplexity={neatPop.Stats.BestComplexity:N6}|MeanComplexity={neatPop.Stats.MeanComplexity:N6}|MaxComplexity={neatPop.Stats.MaxComplexity:N6}";
+                    $"{_eaRunner.EA.Stats.Generation:D},{neatPop.Stats.BestFitness.PrimaryFitness:N3},{neatPop.Stats.MeanFitness:N3},{neatPop.Stats.BestComplexity:N3},{neatPop.Stats.MeanComplexity:N3},{neatPop.Stats.MaxComplexity:N3},{_eaRunner.EA.Stats.TotalEvaluationCount:D},{_eaRunner.EA.Stats.EvaluationsPerSec:N3}";
                 
                 _logger.LogInformation(line);
 

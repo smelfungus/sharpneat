@@ -5,7 +5,7 @@ using SharpNeat.NeuralNets;
 
 namespace SharpNeat.Tasks.Gymnasium;
 
-internal class GymnasiumExperimentFactory : INeatExperimentFactory
+public sealed class GymnasiumExperimentFactory : INeatExperimentFactory
 {
     /// <inheritdoc/>
     public string Id => "gymnasium";
